@@ -25,7 +25,7 @@ local MT = { __index = _ENV }
 
 local function safeLoad( scriptName )
 	local filePath = co.findScript( scriptName )
-
+	print (scriptName)
 	local safeEnv = setmetatable( {}, MT )
 
 	print( "Loading test file: " .. filePath )
@@ -39,6 +39,7 @@ end
 
 local function runSuit( s )
 	for k,v in pairs( s.env )	do
+		print("env item:",k)
 		if type( v ) == "function" then
 	 		local ok, err = pcall( v )
 			local fail = not ok and not err.testError -- failure if is not a test error
@@ -67,8 +68,8 @@ local function loadModuleTypes( moduleName )
 		if path.isDir( moduleDir ) then
 			-- For each file in module directory
 			for filename in lfs.dir( moduleDir ) do
-				local typeName = filename:match( "(.+)Test%.lua$" )
-				if typeName then safeLoad( moduleName .. "." .. typeName .. "Test" ) end
+				local typeName = filename:match( "(.+)Tests%.lua$" )
+				if typeName then safeLoad( moduleName .. "." .. typeName .. "Tests" ) end
 			end
 		end
 	end
