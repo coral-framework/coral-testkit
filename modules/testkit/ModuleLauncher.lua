@@ -1,10 +1,10 @@
 local lfs = require "lfs"
 local path = require "path"
-local TypeWrapper = require "co.compiler.TypeWrapper"
 
 
-local testSuits = {}
 local args = { ... }
+local testSuits = {}
+local totalTests = 0
 
 
 local function loadfilein(filename, env) 
@@ -51,6 +51,7 @@ local function runSuit( s )
 				if fail then s.failures = s.failures + 1 end
 			end
 			table.insert( s.testCases, testCase )
+			totalTests = totalTests + 1
 		end		
 	end	
 end
@@ -120,6 +121,8 @@ local hasErrors = false
 local xmlReport = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 local function report( r ) xmlReport = xmlReport .. r .. "\n" end
 
+report( "<testsuites name=\"AllTests\" tests=\"" .. totalTests .. "\">" )
+
 for i,s in ipairs( testSuits ) do
 	report( "<testsuite name=\"" .. s.name .. "\" tests=\"" .. #s.testCases .. "\" errors =\"" .. s.errors .. "\" failures =\"" .. s.failures .. "\" >" )
 	for j,c in ipairs( s.testCases ) do
@@ -134,6 +137,8 @@ for i,s in ipairs( testSuits ) do
 	end
 	report "</testsuite>"
 end
+
+report( "</testsuites>" )
 
 file:write( xmlReport )
 
