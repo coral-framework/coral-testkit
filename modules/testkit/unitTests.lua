@@ -1,3 +1,4 @@
+-- rises a test error. Used to diferentiate a regular error and a assertion error.
 local function tError( m, default )
 	error( { message = m or ( "assertion failed: " .. default ), testError = true } )
 end
