@@ -23,3 +23,15 @@ function assertEquals( value, expected, message )
 		tError( message, "got " .. tostring(value) .. " when expecting " .. expected )
 	end
 end
+
+function expectException( errorMessage, func, ...  )
+	local ok, err = pcall( func, table.unpack({...}) )
+	if ok then 
+		tError( "Expected to raise an exception but it didn't." ) 
+	else
+		if not err:match( errorMessage ) then tError( "An exception was raised but the message '" .. err .. "' didn't match with the expected:'" .. errorMessage .. "'" ) end
+	end
+	
+end
+
+

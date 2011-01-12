@@ -105,6 +105,19 @@ function openOutputFile( xmlReportFileName )
 	return file
 end
 
+function separeteCamelCasePhrase( name )
+	local phrase = ""
+	for i = 1, #name do
+	    local c = name:sub(i,i)
+		if c == "." then phrase = phrase .. " - "
+		elseif c == c:lower() then
+			phrase = phrase .. c
+		else
+			phrase = phrase .. " " .. c:lower()
+		end		
+	end
+	return phrase
+end 
 
 -- gets the xml report in the JUnit format
 function getXmlReport()
@@ -114,14 +127,14 @@ function getXmlReport()
 	report( "<testsuites name=\"AllTests\" tests=\"" .. totalTests .. "\">" )
 
 	for i,s in ipairs( testSuits ) do
-		report( "<testsuite name=\"" .. s.name .. "\" tests=\"" .. #s.testCases .. "\" errors =\"" .. s.errors .. "\" failures =\"" .. s.failures .. "\" >" )
+		report( "<testsuite name=\"" .. separeteCamelCasePhrase( s.name ) .. "\" tests=\"" .. #s.testCases .. "\" errors =\"" .. s.errors .. "\" failures =\"" .. s.failures .. "\" >" )
 		for j,c in ipairs( s.testCases ) do
 			if c.err or c.failure then 
-				report( "\t<testcase name=\"" .. c.name .. "\" status=\"error\" >" )
+				report( "\t<testcase name=\"" .. separeteCamelCasePhrase( c.name ) .. "\" status=\"error\" >" )
 				report( "\t\t<error type=\"" .. c.errorMessage .. "\"/>" )
 				report( "\t</testcase>" )
 			else
-				report( "\t<testcase name=\"" .. c.name .. "\" status=\"run\" />" )
+				report( "\t<testcase name=\"" .. separeteCamelCasePhrase( c.name ) .. "\" status=\"run\" />" )
 			end
 		end
 		report "</testsuite>"
