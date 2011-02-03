@@ -11,7 +11,7 @@ end
 
 function assertTrue( condition, message )
 	condition = normalizeValue( condition )
-	if type( condition ) ~= 'boolean' then error( "An assertrion should recive a bolean value and not a '" .. type(condition) .. "' type." ) end
+	if type( condition ) ~= 'boolean' then error( "An assertion should recive a bolean value and not a '" .. type(condition) .. "' type." ) end
 
 	if not condition then tError( message, "The condition should be true, but it actually was false" ) end
 end
@@ -23,6 +23,8 @@ function assertEquals( value, expected, message )
 		tError( message, "got " .. tostring(value) .. " when expecting " .. expected )
 	end
 end
+
+
 
 function expectException( errorMessage, func, ...  )
 	local ok, err = pcall( func, table.unpack({...}) )
