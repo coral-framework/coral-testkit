@@ -29,7 +29,7 @@ function expectException( errorMessage, func, ...  )
 	if ok then 
 		tError( "Expected to raise an exception but it didn't." ) 
 	else
-		if not err:match( errorMessage ) then tError( "An exception was raised but the message '" .. err .. "' didn't match with the expected:'" .. errorMessage .. "'" ) end
+		if not err:match( errorMessage ) then tError( "An exception was raised but the message \"" .. err .. "\" didn't match with the expected:\"" .. errorMessage .. "\"" ) end
 	end
 	
 end

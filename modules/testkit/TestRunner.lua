@@ -1,5 +1,6 @@
 local lfs = require "lfs"
 local path = require "path"
+require "testkit.Report"
 
 local args = { ... }
 
@@ -23,9 +24,24 @@ local function loadFileIn( filename, env )
     return func
 end
 
+-- turns a camel case identifier to a space separated phrase
+function separeteCamelCasePhrase( name )
+	local phrase = ""
+	for i = 1, #name do
+	    local c = name:sub(i,i)
+		if c == "." then phrase = phrase .. " - "
+		elseif c == c:lower() then
+			phrase = phrase .. c
+		else
+			phrase = phrase .. " " .. c:lower()
+		end		
+	end
+	return phrase
+end 
+
 -- adds the passed suit of tests to the list to be executed if it has any tests loaded 
 function addTestSuit( e, n )
-	table.insert( testSuits, { name = n, env = e, testCases={}, errors = 0, failures = 0 } )
+	table.insert( testSuits, { name = n, readableName =separeteCamelCasePhrase( n ) , env = e, testCases={}, errors = 0, failures = 0 } )
 end
 
 local MT = { __index = _ENV }
@@ -49,7 +65,7 @@ local function runSuit( s )
 		if type( v ) == "function" then
 	 		local ok, err = pcall( v )
 			local fail = not ok and not err.testError -- failure if is not a test error
-			local testCase = { name = k, err = not ok, failure = fail }
+			local testCase = { name = k,readableName =separeteCamelCasePhrase( k ), err = not ok, failure = fail }
 			if not ok then 
 				testCase.errorMessage = err.message or err
 				print( "the test '" .. k .. "' has failed.\n" .. testCase.errorMessage )
@@ -83,66 +99,6 @@ local function loadModuleTypes( moduleName )
 	end
 end
 
--- creates a folder if necessary, the outputfile and returns a file handle.
--- if an error occours returns nil and a error message
-function openOutputFile( xmlReportFileName )
-	if not xmlReportFileName then 
-		return nil, "The output file name was not given, use the -o [FILE_NAME] sintax." 
-	end
-	local xmlReportFileName = path.normalize( lfs.currentdir() .. "/" .. xmlReportFileName )
-
-	local outputDir = xmlReportFileName:match("(.*)/[^/]*")
-	if not path.exists( outputDir ) and outputDir ~= "" then
-		print ( "Creating output folder: " .. outputDir )
-		path.makePath( outputDir )
-	end
-
-	print( "Writting report to file: " .. xmlReportFileName )
-
-	local file, err = io.open( xmlReportFileName, "w" )
-	if err then return nil, ( "The file could not be opened. " .. err ) end
-
-	return file
-end
-
-function separeteCamelCasePhrase( name )
-	local phrase = ""
-	for i = 1, #name do
-	    local c = name:sub(i,i)
-		if c == "." then phrase = phrase .. " - "
-		elseif c == c:lower() then
-			phrase = phrase .. c
-		else
-			phrase = phrase .. " " .. c:lower()
-		end		
-	end
-	return phrase
-end 
-
--- gets the xml report in the JUnit format
-function getXmlReport()
-	local xmlReport = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-	local function report( r ) xmlReport = xmlReport .. r .. "\n" end
-
-	report( "<testsuites name=\"AllTests\" tests=\"" .. totalTests .. "\">" )
-
-	for i,s in ipairs( testSuits ) do
-		report( "<testsuite name=\"" .. separeteCamelCasePhrase( s.name ) .. "\" tests=\"" .. #s.testCases .. "\" errors =\"" .. s.errors .. "\" failures =\"" .. s.failures .. "\" >" )
-		for j,c in ipairs( s.testCases ) do
-			if c.err or c.failure then 
-				report( "\t<testcase name=\"" .. separeteCamelCasePhrase( c.name ) .. "\" status=\"error\" >" )
-				report( "\t\t<error type=\"" .. c.errorMessage .. "\"/>" )
-				report( "\t</testcase>" )
-			else
-				report( "\t<testcase name=\"" .. separeteCamelCasePhrase( c.name ) .. "\" status=\"run\" />" )
-			end
-		end
-		report "</testsuite>"
-	end
-
-	report( "</testsuites>" )
-	return xmlReport
-end
 
 
 -----------------------------------------------------
@@ -168,12 +124,7 @@ end
 
 print ( totalTests .. " test cases were runned \n" )
 
-
-local file, err = openOutputFile( xmlReportFileName )
-if err then print( err ); return 1 end
-
-file:write( getXmlReport() )
-file:close()
+writeToXml( totalTests, testSuits, xmlReportFileName )
 
 return hasErrors and 1 or 0
 
