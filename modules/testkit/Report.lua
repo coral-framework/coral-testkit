@@ -2,8 +2,10 @@ local path = require "path"
 local lfs = require "lfs"
 
 local file
+
+-----------------------------------------------------------------------------------------------
 -- Helper functions
--------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------
 
 local function w( ... ) file:write( ... ) end
 
@@ -39,6 +41,7 @@ local function openReportFile( xmlReportFileName )
 	return file
 end
 
+-----------------------------------------------------------------------------------------------
 
 
 -- writes the test suits results to the the xml report in the JUnit format 

@@ -9,11 +9,9 @@ local testSuits = {}
 local totalTests = 0
 local hasErrors = false
 
------------------------------------------------------
+-----------------------------------------------------------------------------------------------
 -- Util functions
------------------------------------------------------
-
-
+-----------------------------------------------------------------------------------------------
 -- Loads a file into the passed enviroment
 local function loadFileIn( filename, env ) 
     local fh, err = io.open( filename, 'rb' )
@@ -40,8 +38,8 @@ function separeteCamelCasePhrase( name )
 end 
 
 -- adds the passed suit of tests to the list to be executed if it has any tests loaded 
-function addTestSuit( e, n )
-	table.insert( testSuits, { name = n, readableName =separeteCamelCasePhrase( n ) , env = e, testCases={}, errors = 0, failures = 0 } )
+function addTestSuit( e, n, fPath )
+	table.insert( testSuits, { name = n, readableName =separeteCamelCasePhrase( n ) , filePath = fPath, env = e, testCases={}, errors = 0, failures = 0 } )
 end
 
 local MT = { __index = _ENV }
@@ -56,7 +54,7 @@ local function safeLoad( scriptName )
 	if err then error( "An error occured when loading the file: " .. err ) end
 
 	chunk() -- runs the chunk to fill the enviroment
-	addTestSuit( safeEnv, scriptName ) 
+	addTestSuit( safeEnv, scriptName, filePath ) 
 end
 
 -- runs the given suit by searching for global functions and running them
@@ -68,7 +66,7 @@ local function runSuit( s )
 			local testCase = { name = k,readableName =separeteCamelCasePhrase( k ), err = not ok, failure = fail }
 			if not ok then 
 				testCase.errorMessage = err.message or err
-				print( "the test '" .. k .. "' has failed.\n" .. testCase.errorMessage )
+				print( "the test '" .. k .."' on the file '" .. s.filePath .. "' has failed.\n" .. testCase.errorMessage )
 				s.errors = s.errors + 1
 				if fail then s.failures = s.failures + 1 end
 				hasErrors = true
@@ -80,7 +78,7 @@ local function runSuit( s )
 end
 
 -- searches all script files that matches ends with "Test.lua" on the given module root folder
-local function loadModuleTypes( moduleName )
+local function loadModuleTestScripts( moduleName )
 
 	-- Initializes commmon paths
 	local moduleDirPath = moduleName:gsub( '%.', '/' )
@@ -99,9 +97,7 @@ local function loadModuleTypes( moduleName )
 	end
 end
 
-
-
------------------------------------------------------
+-----------------------------------------------------------------------------------------------
 
 local xmlReportFileName
 
@@ -111,7 +107,7 @@ for i=1, #args do
 		xmlReportFileName = args[i+1] 	
 		i = i + 1
 	else
-	 	loadModuleTypes( args[i] )
+	 	loadModuleTestScripts( args[i] )
 	end
 end
 
