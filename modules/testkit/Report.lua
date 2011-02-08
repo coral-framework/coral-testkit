@@ -1,11 +1,15 @@
+--------------------------------------------------------------------------------
+--- Test Report Generator
+--------------------------------------------------------------------------------
+
 local path = require "path"
 local lfs = require "lfs"
 
 local file
 
------------------------------------------------------------------------------------------------
--- Helper functions
------------------------------------------------------------------------------------------------
+---------------------------------------
+-- Helper Functions
+---------------------------------------
 
 local function w( ... ) file:write( ... ) end
 
@@ -17,7 +21,6 @@ local function wa( n, v ) w( " ", n, "=" ); w( "\"", v, "\"" )  end
 
 -- replaces double quotes by a single quote
 local function escape( text ) return string.gsub( text, "\"", "'" ) end 
-
 
 -- creates a folder if necessary, the outputfile and returns a file handle.
 -- if an error occours returns nil and a error message
@@ -41,8 +44,9 @@ local function openReportFile( xmlReportFileName )
 	return file
 end
 
------------------------------------------------------------------------------------------------
-
+---------------------------------------
+-- Report Methods
+---------------------------------------
 
 -- writes the test suits results to the the xml report in the JUnit format 
 function writeToXml( total, suits, fileName )

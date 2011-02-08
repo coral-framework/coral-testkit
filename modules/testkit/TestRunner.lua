@@ -1,3 +1,7 @@
+--------------------------------------------------------------------------------
+--- Test Runner
+--------------------------------------------------------------------------------
+
 local lfs = require "lfs"
 local path = require "path"
 require "testkit.Report"
@@ -9,16 +13,19 @@ local testSuits = {}
 local totalTests = 0
 local hasErrors = false
 
------------------------------------------------------------------------------------------------
--- Util functions
------------------------------------------------------------------------------------------------
+---------------------------------------
+-- Helper Functions
+---------------------------------------
+
 -- Loads a file into the passed enviroment
 local function loadFileIn( filename, env ) 
     local fh, err = io.open( filename, 'rb' )
     if not fh then return nil, err end
+	
     local func, err = loadin( env, fh:lines(4096), filename )
     fh:close()
     if not func then return nil, err end
+	
     return func
 end
 
@@ -42,19 +49,18 @@ function addTestSuit( e, n, fPath )
 	table.insert( testSuits, { name = n, readableName =separeteCamelCasePhrase( n ) , filePath = fPath, env = e, testCases={}, errors = 0, failures = 0 } )
 end
 
-local MT = { __index = _ENV }
-
 -- loads a script file and stores the enviroment with all the global functions declared
-local function safeLoad( scriptName )
-	local filePath = co.findScript( scriptName )
-	local safeEnv = setmetatable( {}, MT )
-	print( "Loading test file: " .. filePath )
+local MT = { __index = _ENV }
+local function safeLoad( scriptPath, scriptName )
 
-	local chunk, err = loadFileIn( filePath, safeEnv )
+	print( "Loading test file: " .. scriptName )
+	local safeEnv = setmetatable( {}, MT )
+	
+	local chunk, err = loadFileIn( scriptPath .. "/" .. scriptName, safeEnv )
 	if err then error( "An error occured when loading the file: " .. err ) end
 
 	chunk() -- runs the chunk to fill the enviroment
-	addTestSuit( safeEnv, scriptName, filePath ) 
+	addTestSuit( safeEnv, scriptName, scriptPath .. "/" .. scriptName )
 end
 
 -- runs the given suit by searching for global functions and running them
@@ -77,37 +83,30 @@ local function runSuit( s )
 	end	
 end
 
--- searches all script files that matches ends with "Test.lua" on the given module root folder
-local function loadModuleTestScripts( moduleName )
-
-	-- Initializes commmon paths
-	local moduleDirPath = moduleName:gsub( '%.', '/' )
-	local coralPaths = co.getPaths()
-
-	-- For each repository
-	for i, repositoryDir in ipairs( coralPaths ) do
-		local moduleDir = repositoryDir .. '/' .. moduleDirPath
-		if path.isDir( moduleDir ) then
-			-- For each file in module directory
-			for filename in lfs.dir( moduleDir ) do
-				local typeName = filename:match( "(.+)Tests%.lua$" )
-				if typeName then safeLoad( moduleName .. "." .. typeName .. "Tests" ) end
-			end
-		end
+-- Searches all script files that matches ends with "Test.lua" on the given 
+--  target test folder.
+local function loadTestScripts( testsPath )
+	for filename in lfs.dir( testsPath ) do
+		local typeName = filename:match( "(.+)Tests%.lua$" )
+		if typeName then safeLoad( testsPath, typeName .. "Tests.lua" ) end
 	end
 end
 
------------------------------------------------------------------------------------------------
+---------------------------------------
+-- Main Execution
+---------------------------------------
 
 local xmlReportFileName
 
 for i=1, #args do 
-	--parses the output file name
+	-- parses the output file name
 	if args[i] == "-o" and i ~= #args then 
-		xmlReportFileName = args[i+1] 	
-		i = i + 1
-	else
-	 	loadModuleTestScripts( args[i] )
+		xmlReportFileName = args[i+1]
+	else 
+		-- verifies if the arg is not the output filename
+		if args[i-1] ~= "-o" then
+			loadTestScripts( args[i] ) 
+		end
 	end
 end
 

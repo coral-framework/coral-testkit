@@ -1,13 +1,26 @@
+--------------------------------------------------------------------------------
+--- Unit Testing
+--------------------------------------------------------------------------------
+
+---------------------------------------
+-- Helper Functions
+---------------------------------------
+
 -- rises a test error. Used to diferentiate a regular error and a assertion error.
 local function tError( m, default )
 	error( { message = m or ( "assertion failed: " .. default ), testError = true } )
 end
 
+-- verifies if the given value is a function
 local function normalizeValue( value )
 	if type( value ) == 'function' then return value() end
 	if type( value ) == 'table' then error( "table values are not suported in comparisons." ) end
 	return value
 end
+
+---------------------------------------
+-- Testing Methods
+---------------------------------------
 
 function assertTrue( condition, message )
 	condition = normalizeValue( condition )
@@ -33,7 +46,4 @@ function expectException( errorMessage, func, ...  )
 	else
 		if not err:match( errorMessage ) then tError( "An exception was raised but the message \"" .. err .. "\" didn't match with the expected:\"" .. errorMessage .. "\"" ) end
 	end
-	
 end
-
-
