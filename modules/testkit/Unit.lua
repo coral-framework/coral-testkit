@@ -37,7 +37,11 @@ function assertEquals( value, expected, message )
 	end
 end
 
-
+function assertVector( vector1, vector2 )
+	assertEquals( vector1.x, vector2.x, "The value of coordinate X is " .. tostring(vector1.x) .. " when the expected is " .. tostring(vector2.x) )
+	assertEquals( vector1.y, vector2.y, "The value of coordinate Y is " .. tostring(vector1.y) .. " when the expected is " .. tostring(vector2.y) )
+	assertEquals( vector1.z, vector2.z, "The value of coordinate Z is " .. tostring(vector1.z) .. " when the expected is " .. tostring(vector2.z) )
+end
 
 function expectException( errorMessage, func, ...  )
 	local ok, err = pcall( func, table.unpack({...}) )
