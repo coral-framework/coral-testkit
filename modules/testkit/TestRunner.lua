@@ -83,7 +83,7 @@ local function runSuit( s )
 	end	
 end
 
--- Searches all script files that matches ends with "Test.lua" on the given 
+-- Searches all script files that matches ends with "Tests.lua" on the given 
 --  target test folder.
 local function loadTestScripts( testsPath )
 	for filename in lfs.dir( testsPath ) do
