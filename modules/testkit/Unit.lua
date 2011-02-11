@@ -22,14 +22,14 @@ end
 -- Testing Methods
 ---------------------------------------
 
-function assertTrue( condition, message )
+function ASSERT_TRUE( condition, message )
 	condition = normalizeValue( condition )
 	if type( condition ) ~= 'boolean' then error( "An assertrion should recive a bolean value and not a '" .. type(condition) .. "' type." ) end
 
 	if not condition then tError( message, "The condition should be true, but it actually was false" ) end
 end
 
-function assertEquals( value, expected, message )
+function ASSERT_EQUALS( value, expected, message )
 	value = normalizeValue( value )
 	expected = normalizeValue( expected )
  	if value ~= expected then
@@ -37,7 +37,7 @@ function assertEquals( value, expected, message )
 	end
 end
 
-function expectException( errorMessage, func, ...  )
+function EXPECT_EXCEPTION( errorMessage, func, ...  )
 	local ok, err = pcall( func, table.unpack({...}) )
 	if ok then 
 		tError( "Expected to raise an exception but it didn't." ) 
