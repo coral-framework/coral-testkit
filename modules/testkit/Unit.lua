@@ -32,6 +32,7 @@ end
 function ASSERT_EQUALS( value, expected, message )
 	value = normalizeValue( value )
 	expected = normalizeValue( expected )
+	--if type(value) ~= type(expected) then error( "compared values are two different types." ) end
  	if value ~= expected then
 		tError( message, "got " .. tostring(value) .. " when expecting " .. expected )
 	end

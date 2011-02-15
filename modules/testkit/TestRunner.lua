@@ -4,12 +4,12 @@
 
 local lfs = require "lfs"
 local path = require "path"
-require "testkit.Report"
+local report = require "testkit.Report"
 
 local args = { ... }
 
 -- list of suits to run. A suit is a colection of test cases.
-local testSuits = {}
+local testSuites = {}
 local totalTests = 0
 local hasErrors = false
 
@@ -30,7 +30,7 @@ local function loadFileIn( filename, env )
 end
 
 -- turns a camel case identifier to a space separated phrase
-function separeteCamelCasePhrase( name )
+local function separateCamelCasePhrase( name )
 	local phrase = ""
 	for i = 1, #name do
 	    local c = name:sub(i,i)
@@ -45,8 +45,18 @@ function separeteCamelCasePhrase( name )
 end 
 
 -- adds the passed suit of tests to the list to be executed if it has any tests loaded 
-function addTestSuit( e, n, fPath )
-	table.insert( testSuits, { name = n, readableName =separeteCamelCasePhrase( n ) , filePath = fPath, env = e, testCases={}, errors = 0, failures = 0 } )
+local function addTestSuite( e, n, fPath )
+
+	local newTable = { 	name = n,
+						readableName = separateCamelCasePhrase( n ),
+						filePath = fPath,
+						environment = e,
+						testCases = {},
+						testErrors = 0,
+						failures = 0
+					 }
+					 
+	testSuites[#testSuites + 1] = newTable
 end
 
 -- loads a script file and stores the enviroment with all the global functions declared
@@ -60,24 +70,25 @@ local function safeLoad( scriptPath, scriptName )
 	if err then error( "An error occured when loading the file: " .. err ) end
 
 	chunk() -- runs the chunk to fill the enviroment
-	addTestSuit( safeEnv, scriptName, scriptPath .. "/" .. scriptName )
+	
+	addTestSuite( safeEnv, scriptName, scriptPath .. "/" .. scriptName )
 end
 
 -- runs the given suit by searching for global functions and running them
-local function runSuit( s )
-	for k,v in pairs( s.env )	do
+local function runSuite( s )
+	for k,v in pairs( s.environment ) do
 		if type( v ) == "function" then
 	 		local ok, err = pcall( v )
 			local fail = not ok and not err.testError -- failure if is not a test error
-			local testCase = { name = k,readableName =separeteCamelCasePhrase( k ), err = not ok, failure = fail }
+			local testCase = { name = k, readableName = separateCamelCasePhrase( k ), err = not ok, failure = fail }
 			if not ok then 
 				testCase.errorMessage = err.message or err
 				print( "the test '" .. k .."' on the file '" .. s.filePath .. "' has failed.\n" .. testCase.errorMessage )
-				s.errors = s.errors + 1
+				s.testErrors = s.testErrors + 1
 				if fail then s.failures = s.failures + 1 end
 				hasErrors = true
 			end
-			table.insert( s.testCases, testCase )
+			s.testCases[#s.testCases + 1] =  testCase
 			totalTests = totalTests + 1
 		end		
 	end	
@@ -110,16 +121,16 @@ for i=1, #args do
 	end
 end
 
-print( #testSuits .. " test suits loaded..." ) 
+print( #testSuites .. " test suits loaded..." ) 
 
 -- run all tests loaded
-for i,s in ipairs( testSuits ) do
-	runSuit( s ) 
+for i,s in ipairs( testSuites ) do
+	runSuite( s ) 
 end
 
 print ( totalTests .. " test cases were runned \n" )
 
-writeToXml( totalTests, testSuits, xmlReportFileName )
+report.writeToXml( totalTests, testSuites, xmlReportFileName )
 
 return hasErrors and 1 or 0
 

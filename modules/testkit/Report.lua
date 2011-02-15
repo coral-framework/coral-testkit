@@ -49,7 +49,8 @@ end
 ---------------------------------------
 
 -- writes the test suits results to the the xml report in the JUnit format 
-function writeToXml( total, suits, fileName )
+local M = {}
+function M.writeToXml( total, suits, fileName )
 	
 	local f, err = openReportFile( fileName )
 	if err then print( err ); return 1 end
@@ -64,7 +65,7 @@ function writeToXml( total, suits, fileName )
 		w "<testsuite" 
 		wa( "name", s.readableName )
 		wa( "tests", #s.testCases ) 
-		wa( "errors", s.errors )
+		wa( "errors", s.testErrors )
 		wa( "failures", s.failures ) wl ">"
 
 		for j,c in ipairs( s.testCases ) do
@@ -88,3 +89,6 @@ function writeToXml( total, suits, fileName )
 
 	f:close()
 end
+
+return M
+
