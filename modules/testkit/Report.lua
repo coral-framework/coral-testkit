@@ -36,7 +36,7 @@ local function openReportFile( xmlReportFileName )
 		path.makePath( outputDir )
 	end
 
-	print( "Writting report to file: " .. xmlReportFileName )
+	print( "Writing report to file: " .. xmlReportFileName )
 
 	local file, err = io.open( xmlReportFileName, "w" )
 	if err then return nil, ( "The file could not be opened. " .. err ) end

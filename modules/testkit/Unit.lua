@@ -32,7 +32,9 @@ end
 function ASSERT_EQ( value, expected, message )
 	value = normalizeValue( value )
 	expected = normalizeValue( expected )
-	--if type(value) ~= type(expected) then error( "compared values are two different types." ) end
+	
+	if type(value) ~= type(expected) then error( "compared values are two different types." ) end
+	
  	if value ~= expected then
 		tError( message, "got " .. tostring(value) .. " when expecting " .. expected )
 	end
@@ -41,6 +43,10 @@ end
 function ASSERT_DOUBLE_EQ( value, expected, message )
 	value = normalizeValue( value )
 	expected = normalizeValue( expected )
+	
+	largerAbsolute = math.abs( ( ( value > expected ) and value ) or expected )
+	delta = math.abs( ( math.abs( value ) - math.abs( expected ) ) )
+	tolerance = ( ( largerAbsolute < 0.0001 ) and 0.0000001 ) or largerAbsolute * 0.0000001 
 	
 	valueAbs = math.abs( value )
 	expectedAbs = math.abs( expected )
@@ -63,3 +69,4 @@ function EXPECT_EXCEPTION( errorMessage, func, ...  )
 		if not err:match( errorMessage ) then tError( "An exception was raised but the message \"" .. err .. "\" didn't match with the expected:\"" .. errorMessage .. "\"" ) end
 	end
 end
+

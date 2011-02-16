@@ -29,7 +29,7 @@ local function loadFileIn( filename, env )
     return func
 end
 
--- turns a camel case identifier to a space separated phrase
+-- Turns a camel case identifier to a space separated phrase
 local function separateCamelCasePhrase( name )
 	local phrase = ""
 	for i = 1, #name do
@@ -44,7 +44,29 @@ local function separateCamelCasePhrase( name )
 	return phrase
 end 
 
--- adds the passed suit of tests to the list to be executed if it has any tests loaded 
+-- Returns the copy of the given table
+local function copyTable( t )
+	local t2 = {}
+	for k,v in pairs( t ) do
+		t2[k] = v
+	end
+	return t2
+end
+
+---------------------------------------
+-- TestRunner Fucntions
+---------------------------------------
+
+local function verifyEnvIntegrity( suite, originalEnv )
+	for k,v in pairs( suite.environment ) do
+ 		if originalEnv[k] ~= v then
+ 			error( "One or more variables in " .. suite.filePath .. " are not" ..
+ 			" local, and therefore, the test environment has been corrupted." )
+ 		end
+  	end
+end
+
+-- Adds the passed suit of tests to the list to be executed if it has any tests loaded 
 local function addTestSuite( e, n, fPath )
 
 	local newTable = { 	name = n,
@@ -59,7 +81,7 @@ local function addTestSuite( e, n, fPath )
 	testSuites[#testSuites + 1] = newTable
 end
 
--- loads a script file and stores the enviroment with all the global functions declared
+-- Loads a script file and stores the enviroment with all the global functions declared
 local MT = { __index = _ENV }
 local function safeLoad( scriptPath, scriptName )
 
@@ -74,11 +96,16 @@ local function safeLoad( scriptPath, scriptName )
 	addTestSuite( safeEnv, scriptName, scriptPath .. "/" .. scriptName )
 end
 
--- runs the given suit by searching for global functions and running them
+-- Runs the given suit by searching for global functions and running them
 local function runSuite( s )
+	local originalEnv = copyTable( s.environment )
+	
 	for k,v in pairs( s.environment ) do
 		if type( v ) == "function" then
+			
 	 		local ok, err = pcall( v )
+			verifyEnvIntegrity( s, originalEnv )
+			
 			local fail = not ok and not err.testError -- failure if is not a test error
 			local testCase = { name = k, readableName = separateCamelCasePhrase( k ), err = not ok, failure = fail }
 			if not ok then 
@@ -123,12 +150,12 @@ end
 
 print( #testSuites .. " test suits loaded..." ) 
 
--- run all tests loaded
+-- Run all tests loaded
 for i,s in ipairs( testSuites ) do
 	runSuite( s ) 
 end
 
-print ( totalTests .. " test cases were runned \n" )
+print ( totalTests .. " test cases were executed.\n" )
 
 report.writeToXml( totalTests, testSuites, xmlReportFileName )
 
