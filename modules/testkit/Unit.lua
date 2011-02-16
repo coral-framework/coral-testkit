@@ -50,7 +50,7 @@ function ASSERT_DOUBLE_EQ( value, expected, message )
 	delta = math.abs( valueAbs - expectedAbs )
 	tolerance = ( ( largerAbsolute < 1000 ) and 0.0000001 ) or largerAbsolute * 0.0000001 
 	
- 	if  delta > tolerance or ( expected * value ) > 0 then
+ 	if  delta > tolerance or ( expected * value ) < 0 then
 		tError( message, "got " .. tostring(value) .. " when expecting " .. expected )
 	end
 end
