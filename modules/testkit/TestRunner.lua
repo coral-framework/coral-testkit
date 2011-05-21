@@ -96,6 +96,16 @@ local function safeLoad( scriptPath, scriptName )
 	addTestSuite( safeEnv, scriptName, scriptPath .. "/" .. scriptName )
 end
 
+-- closure needed to get the call stack in case it is not a test error
+local traceback = require( "debug" ).traceback
+local function errorClosure( err )
+	if err.testError  then
+		return err
+	else
+		return "** Failure is not a test error **\n" .. err .. "\n" .. traceback()
+	end
+end
+
 -- Runs the given suit by searching for global functions and running them
 local function runSuite( s )
 	local originalEnv = copyTable( s.environment )
@@ -103,7 +113,7 @@ local function runSuite( s )
 	for k,v in pairs( s.environment ) do
 		if type( v ) == "function" then
 			
-	 		local ok, err = pcall( v )
+	 		local ok, err = xpcall( v, errorClosure )
 			verifyEnvIntegrity( s, originalEnv )
 			
 			local fail = not ok and not err.testError -- failure if is not a test error
