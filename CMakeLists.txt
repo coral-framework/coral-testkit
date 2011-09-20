@@ -35,6 +35,9 @@ IF( NOT CMAKE_INSTALL_PREFIX MATCHES "coral-testkit" )
 	SET( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/coral-testkit" )
 ENDIF()
 
+# install shared library
+INSTALL( DIRECTORY ${CMAKE_BINARY_DIR}/modules/testkit DESTINATION modules )
+
 # install Lua files
 INSTALL( DIRECTORY ${CMAKE_SOURCE_DIR}/modules/ DESTINATION modules )
 
@@ -49,4 +52,11 @@ SET( CPACK_PACKAGE_DESCRIPTION_SUMMARY	"Testing Module" )
 
 INCLUDE( CPack )
 
+################################################################################
+# Subdirectories
+################################################################################
 
+ADD_SUBDIRECTORY( src )
+
+ENABLE_TESTING()
+ADD_SUBDIRECTORY( tests )
