@@ -27,6 +27,7 @@ public:
 
 	co::int32 getUsedMemory()
 	{
+		#if defined( CORAL_OS_WIN )
 		DWORD pid = GetCurrentProcessId();
 		HANDLE hProcess;
 		PROCESS_MEMORY_COUNTERS pmc;
@@ -37,6 +38,8 @@ public:
 
 		GetProcessMemoryInfo( hProcess, &pmc, sizeof(pmc));
 		return static_cast<co::int32>( pmc.WorkingSetSize );
+		#endif
+		return 0;
 	}
 
 private:
