@@ -17,8 +17,8 @@ ELSE( WIN32 )
 	TARGET_LINK_LIBRARIES( testkit ${CORAL_LIBRARIES} )
 ENDIF( WIN32 )
 	
-CORAL_DEFAULT_TARGET_PROPERTIES( testkit )
-CORAL_MODULE_TARGET_PROPERTIES( testkit )
+CORAL_TARGET( testkit )
+CORAL_MODULE_TARGET( testkit )
 
 ################################################################################
 # Source Groups
