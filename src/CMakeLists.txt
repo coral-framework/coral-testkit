@@ -18,7 +18,7 @@ ELSE( WIN32 )
 ENDIF( WIN32 )
 	
 CORAL_TARGET( testkit )
-CORAL_MODULE_TARGET( testkit )
+CORAL_MODULE_TARGET( "testkit" testkit )
 
 ################################################################################
 # Source Groups
