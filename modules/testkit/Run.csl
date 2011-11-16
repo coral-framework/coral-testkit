@@ -1,0 +1,8 @@
+/*
+	Launcher component that runs all test scripts from a list of dirs.
+ */
+@lua.Scripted( "testkit.Run" )
+component Run
+{
+	provides lua.ILauncher launcher;
+};

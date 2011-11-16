@@ -1,4 +1,0 @@
-interface IMemoryQuery
-{
-	readonly int32 usedMemory;
-};

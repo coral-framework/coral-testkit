@@ -1,4 +1,0 @@
-component MemoryQuery
-{
-	provides IMemoryQuery query;
-};
