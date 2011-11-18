@@ -4,6 +4,8 @@ local cmdline = require "lua.cmdline"
 local Suite = require "testkit.Suite"
 local report = require "testkit.report"
 local util = require "testkit.util"
+local print = print
+local ipairs = ipairs
 
 -------------------------------------------------------------------------------
 -- Command-Line Handler Functions
@@ -69,7 +71,7 @@ function Component:main( args )
 	local stats = { tests = 0, passed = 0, errors = 0, failures = 0, time = 0 }
 
 	-- load test suites from test scripts in the listed dirs
-	for i, dir in ipairs( dirs ) do
+	for _, dir in ipairs( dirs ) do
 		print( "Looking for test scripts in " .. dir )
 		for filename in lfs.dir( dir ) do
 			if filename:match( "Tests%.lua$" ) then
@@ -91,11 +93,11 @@ function Component:main( args )
 	local numTestsStr = util.formatCount( stats.tests, "test", "tests" )
 	local numSuitesStr = util.formatCount( #suites, "test suite", "test suites" )
 
-	print( "\n[==========]", "Running " .. numTestsStr .. " from " .. numSuitesStr .. "." )
+	print( "\n[==========] Running " .. numTestsStr .. " from " .. numSuitesStr .. "." )
 
 	-- run all test suites
 	local startTime = util.tick()
-	for i, suite in ipairs( suites ) do
+	for _, suite in ipairs( suites ) do
 		suite:run()
 		stats.errors = stats.errors + suite.errors
 		stats.failures = stats.failures + suite.failures
@@ -104,21 +106,41 @@ function Component:main( args )
 	stats.time = util.elapsed( startTime )
 	local timeStr = util.formatTime( stats.time )
 
-	print( "\n[==========]", numTestsStr .. " from " .. numSuitesStr .. " ran. (" .. timeStr .. " total)" )
+	print( "\n[==========] " .. numTestsStr .. " from " .. numSuitesStr .. " ran. (" .. timeStr .. " total)" )
 
 	stats.passed = stats.tests - stats.errors - stats.failures
 	assert( stats.passed >= 0 )
 
 	if stats.passed > 0 then
-		print( "[  PASSED  ]", util.formatCount( stats.passed, "test.", "tests." ) )
+		print( "[  PASSED  ] " .. util.formatCount( stats.passed, "test.", "tests." ) )
 	end
 
 	if stats.errors > 0 then
-		print( "[  ERRORS  ]", util.formatCount( stats.errors, "test.", "tests." ) )
+		local statusStr = "[  ERRORS  ] "
+		print( statusStr .. util.formatCount( stats.errors, "test", "tests" ) .. ", listed below:" )
+		for _, suite in ipairs( suites ) do
+			if suite.errors > 0 then
+				for _, test in ipairs( suite.tests ) do
+					if test.err then
+						print( statusStr .. suite.name .. "." .. test.name )
+					end
+				end
+			end
+		end
 	end
 
 	if stats.failures > 0 then
-		print( "[  FAILED  ]", util.formatCount( stats.failures, "test.", "tests." ) )
+		local statusStr = "[  FAILED  ] "
+		print( statusStr .. util.formatCount( stats.failures, "test", "tests" ) .. ", listed below:" )
+		for _, suite in ipairs( suites ) do
+			if suite.failures > 0 then
+				for _, test in ipairs( suite.tests ) do
+					if #test.failures > 0 then
+						print( statusStr .. suite.name .. "." .. test.name )
+					end
+				end
+			end
+		end
 	end
 
 	print( "" )

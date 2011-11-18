@@ -1,14 +1,33 @@
-function assertTrue()
-	ASSERT_TRUE( 3.14 == 3.14 )
+function isTrue()
+	EXPECT_TRUE( 3.1444445 ~= 3.1444446 )
 end
 
-function assertEq()
-	ASSERT_EQ( "str", "str" )
-	--ASSERT_EQ( 3.1444445, 3.1444446 )
+function isEqual()
+	EXPECT_EQ( 3.144444, 3.144444 )
+end
+
+function isNotEqual()
+	EXPECT_NE( 3.1444445, 3.1444446 )
+end
+
+function isLesserThan()
+	EXPECT_LT( 3.1444445, 3.1444446 )
 end
 
 function assertDoubleEq()
-	ASSERT_DOUBLE_EQ( 3.1444445, 3.1444446 )
+	EXPECT_DOUBLE_EQ( 3.1444445, 3.1444446 )
+end
+
+function erroneous()
+	EXPECT_ERROR( function() oopsAnError()() end )
+end
+
+local function raiseException()
+	co.raise( "co.IllegalStateException", "omg an exception" )
+end
+
+function exceptional()
+	EXPECT_EXCEPTION( "co.IllegalStateException", function() raiseException() end )
 end
 
 -- make sure setup() and teardown() are being called

@@ -3,7 +3,28 @@
 --------------------------------------------------------------------------------
 
 local path = require "lua.path"
-local printVar = require "lua.printVar"
+local sByte = string.byte
+local sGSub = string.gsub
+local sFormat = string.format
+
+local xmlEscapes = {
+	['<'] = "&lt;",
+	['>'] = "&gt;",
+	['&'] = "&amp;",
+	['"'] = "&quot;",
+}
+
+local function xmlEscaper( c )
+	local escape = xmlEscapes[c]
+	if not escape then
+		escape = sFormat( "&#x%.2X;", sByte( c ) )
+	end
+	return escape
+end
+
+local function xmlEscape( str )
+	return sGSub( str, "[%c<>&\"]", xmlEscaper )
+end
 
 local file
 
@@ -25,15 +46,26 @@ local function writeToXml( stats, suites, filename )
 	path.makePath( dirPath )
 
 	local file = assert( io.open( filename, "w" ) )
-
-	-- write
 	local function w( ... ) file:write( ... ) end
 
 	-- write a line
 	local function wl( ... ) w( ... ) w( "\n" ) end
 
 	-- write an XML attribute
-	local function wa( n, v ) w( " ", n, "=" ) w( "\"", v, "\"" ) end
+	local function wa( name, value )
+		w( " ", name, "=" )
+		if value == nil then
+			w( '""' )
+		else
+			w( '"', xmlEscape( value ), '"' )
+		end
+	end
+
+	-- write an error in a test case
+	local function wError( kind, type, message, text )
+		w( "\t\t\t<", kind ) wa( "type", type ) wa( "message", message )
+		wl( "><![CDATA[", text, "]]></", kind, ">" )
+	end
 
 	wl( "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" )
 	w( "<testsuites" )
@@ -70,19 +102,11 @@ local function writeToXml( stats, suites, filename )
 				wl( ">" )
 
 				for k, failure in ipairs( test.failures ) do
-					w( "\t\t\t<failure" ) wa( "message", failure.message ) wa( "type", "" ) wl( "><![CDATA[" )
-					local info = failure.info
-					w( "\t\t\t\t", info.source, ":", info.currentline )
-					if info.name then
-						w( " in function ", info.name )
-					end
-					wl( "\n]]></failure>" )
+					wError( "failure", "", failure.message, failure.text )
 				end
 
 				if test.err then
-					w( "\t\t\t<error" ) wa( "message", test.err.message ) wa( "type", "" ) w( "><![CDATA[" )
-					w( test.err.traceback )
-					wl( "]]></error>" )
+					wError( "error", test.err.type, test.err.message, test.err.traceback )
 				end
 
 				wl( "\t\t</testcase>" )
