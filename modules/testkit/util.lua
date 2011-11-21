@@ -3,6 +3,7 @@
 --------------------------------------------------------------------------------
 
 local osClock = os.clock
+local sformat = string.format
 
 -- Returns the current time stamp
 local function tick()
@@ -28,9 +29,27 @@ local function formatCount( count, singular, plural )
 	return count .. " " .. ( count == 1 and singular or plural )
 end
 
+-- Formats an escaped string between quotes.
+local function quoteString( str )
+	if str:find( "\n", nil, true ) then
+		return "[[" .. str:gsub( "\n", "\n    " ) .. "\n]]"
+	else
+		return '"' .. str .. '"'
+	end
+end
+
 -- Extracts the source file from the 'source' field of a lua_Debug table
 local function getSource( info )
 	return info.source:sub( 2 )
+end
+
+-- Fisher-Yates shuffle
+math.randomseed( os.time() )
+local function shuffle( t )
+	for n = #t, 1, -1 do
+		local k = math.random( n )
+		t[n], t[k] = t[k], t[n]
+	end
 end
 
 return {
@@ -38,5 +57,7 @@ return {
 	elapsed = elapsed,
 	formatTime = formatTime,
 	formatCount = formatCount,
-	getSource = getSource
+	quoteString = quoteString,
+	getSource = getSource,
+	shuffle = shuffle,
 }

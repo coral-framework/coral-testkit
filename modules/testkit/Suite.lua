@@ -72,6 +72,7 @@ function Suite.loadFrom( filename )
 	-- create the Suite
 	local suite = Suite.new()
 	suite.name = name
+	suite.allTests = tests
 	suite.tests = tests
 	suite.setup = setup
 	suite.teardown = teardown
@@ -155,7 +156,26 @@ local function try( f )
 	return xpcall( f, cleanTraceback )
 end
 
+function Suite:filter( pattern )
+	if not pattern then return nil end
+	local tests = {}
+	for _, test in ipairs( self.allTests ) do
+		local testName = self.name .. '.' .. test.name
+		if testName:match( pattern ) then
+			tests[#tests + 1] = test
+		end
+	end
+	self.tests = tests
+	return tests
+end
+
+function Suite:shuffle()
+	util.shuffle( self.tests )
+end
+
 function Suite:run()
+	self.errors = 0
+	self.failures = 0
 	local testsStr = util.formatCount( #self.tests, "test", "tests" )
 	print( "\n[----------] " .. testsStr .. " from " .. self.name )
 	local suiteStartTime = util.tick()
@@ -204,7 +224,7 @@ function Suite:run()
 
 		-- update suite stats
 		self.errors = self.errors + ( test.err and 1 or 0 )
-		self.failures = self.failures + #failures
+		self.failures = self.failures + ( #failures > 0 and 1 or 0 )
 
 		-- teardown the test environment
 		ok, err = try( self.teardown )

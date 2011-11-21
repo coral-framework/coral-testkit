@@ -6,7 +6,6 @@ local assert = assert
 local tostring = tostring
 local mabs = math.abs
 local smatch = string.match
-local sformat = string.format
 local coType = co.Type
 local coGetException = co.getException
 
@@ -22,6 +21,10 @@ local env = setmetatable( {}, { __index = _ENV } )
 
 local failures
 
+local failureMT = { __tostring = function( failure )
+	return failure.text
+end }
+
 function env.clearFailures()
 	failures = {}
 end
@@ -32,10 +35,10 @@ end
 
 local function addFailure( message, level )
 	local info = debug.getinfo( level + 1, "nSl" )
-	failures[#failures + 1] = {
+	failures[#failures + 1] = setmetatable( {
 		message = message,
 		text = util.getSource( info ) .. ":" .. info.currentline .. ": Failure\n" .. message
-	}
+	}, failureMT )
 end
 
 local function fail()
@@ -45,15 +48,100 @@ local function fail()
 end
 
 -------------------------------------------------------------------------------
+-- Failure Assertions (tests if a testing function reports failures correctly)
+-------------------------------------------------------------------------------
+
+local function expectFailure( messagePattern, closure, expectFatal, level )
+	-- messagePattern is optional
+	if not closure then
+		closure = messagePattern
+		messagePattern = nil
+	end
+	assert( messagePattern == nil or type( messagePattern ) == 'string' )
+	assert( type( closure ) == 'function' )
+
+	local originalNumFailures = #failures
+	local ok, err = pcall( closure )
+	local numNewFailures = #failures - originalNumFailures
+	assert( numNewFailures >= 0 )
+
+	-- extract the new failures
+	local newFailures = {}
+	for i = 1, numNewFailures do
+		newFailures[i] = failures[originalNumFailures + i]
+		failures[originalNumFailures + i] = nil
+	end
+	assert( #failures == originalNumFailures )
+
+	-- check general expectations
+	local failMsg
+	local isFatalFailure = ( not ok and type( err ) == 'table' and err.fatalFailure )
+	if expectFatal ~= isFatalFailure or numNewFailures == 0 then
+		failMsg = "Expected: a " .. ( expectFatal and "" or "non-" ) .. "fatal failure\n  Actual: got "
+		if isFatalFailure then
+			failMsg = failMsg .. "a fatal failure"
+		elseif not ok then
+			failMsg = failMsg .. "an error"
+		elseif numNewFailures == 0 then
+			failMsg = failMsg .. "no failure whatsoever"
+		else
+			failMsg = failMsg .. util.formatCount( numNewFailures, "non-fatal failure", "non-fatal failures" )
+		end
+		if err then
+			failMsg = failMsg .. "\n Message: \"" .. tostring( err ) .. '"'
+		end
+	end
+
+	-- look for a matching message if a pattern was provided
+	if not failMsg and messagePattern then
+		local foundMatch = false
+		for i, failure in ipairs( newFailures ) do
+			if smatch( failure.text, messagePattern ) then
+				foundMatch = true
+				break
+			end
+		end
+		if not foundMatch then
+			failMsg = "  Expected: a failure matching the pattern " .. util.quoteString( messagePattern )
+						.. "\n    Actual: no message matched the pattern"
+			for i, failure in ipairs( newFailures ) do
+				failMsg = failMsg .. "\nFailure #" .. i .. ": " .. util.quoteString( tostring( failure ) )
+			end
+		end
+	end
+
+	if failMsg then
+		addFailure( failMsg, level + 1 )
+	end
+	return failMsg == nil
+end
+
+function env.EXPECT_FATAL_FAILURE( messagePattern, closure )
+	return expectFailure( messagePattern, closure, true, 1 )
+end
+
+function env.EXPECT_NONFATAL_FAILURE( messagePattern, closure )
+	return expectFailure( messagePattern, closure, false, 1 )
+end
+
+-------------------------------------------------------------------------------
 -- Basic Assertions
 -------------------------------------------------------------------------------
 
+local function formatObject( object )
+	return "(" .. tostring( object ) .. ")"
+end
+
+local formatters = {
+	["string"] = util.quoteString,
+	["table"] = formatObject,
+	["function"] = formatObject,
+	["thread"] = formatObject,
+	["userdata"] = formatObject,
+}
+
 local function formatValue( v )
-	if type( v ) == 'string' then
-		return string.format( '%q', v )
-	else
-		return tostring( v )
-	end
+	return ( formatters[type( v )] or tostring )( v )
 end
 
 local function expectValue( expected, actual, level )
@@ -67,19 +155,19 @@ local function assertValue( expected, actual, level )
 end
 
 function env.ASSERT_TRUE( condition )
-	return assertValue( true, condition, 1 )
+	return assertValue( true, condition and true, 1 )
 end
 
 function env.EXPECT_TRUE( condition )
-	return expectValue( true, condition, 1 )
+	return expectValue( true, condition and true, 1 )
 end
 
 function env.ASSERT_FALSE( condition )
-	return assertValue( false, condition, 1 )
+	return assertValue( false, condition or false, 1 )
 end
 
 function env.EXPECT_FALSE( condition )
-	return expectValue( false, condition, 1 )
+	return expectValue( false, condition or false, 1 )
 end
 
 function env.ASSERT_EQ( val1, val2 )
@@ -94,7 +182,7 @@ end
 -- Floating-Point Assertions
 -------------------------------------------------------------------------------
 
-local epsilon = 0.0000001
+local epsilon = 0.000000001
 
 local function expectNear( expected, actual, tolerance, level )
 	-- auto-select a tolerance if not provided
@@ -102,11 +190,11 @@ local function expectNear( expected, actual, tolerance, level )
 		local absExpected = mabs( expected )
 		local absActual = mabs( actual )
 		local absLargest = absExpected > absActual and absExpected or absActual
-		tolerance = absLargest < 0.0001 and epsilon or absLargest * epsilon
+		tolerance = absLargest > 0.001 and epsilon or ( absLargest * epsilon )
 	end
 	local absError = mabs( actual - expected )
 	if absError <= tolerance then return true end
-	local message = string.format( " Expected: %f\n   Actual: %f    Error: %fTolerance: %f",
+	local message = string.format( " Expected: %.12f\n   Actual: %.12f\n    Error: %.24f\nTolerance: %.24f",
 						expected, actual, absError, tolerance )
 	addFailure( message, level + 1 )
 	return false
@@ -145,9 +233,13 @@ local binaryOps = {
 }
 
 local function expectBinaryOp( val1, binOp, val2, level )
-	if binaryOps[binOp]( val1, val2 ) then return true end
-	local message = "Expected: " .. formatValue( val1 ) .. " " .. binOp .. " " .. formatValue( val2 ) .. ", which is false"
-	addFailure( message, level + 1 )
+	local ok, res = pcall( binaryOps[binOp], val1, val2 )
+	if ok and res then return true end
+	local msg = ", which is false"
+	if not ok then
+		msg = ", but operation '" .. binOp .. "' raised an error\n Message: " .. tostring( res )
+	end
+	addFailure( "Expected: " .. formatValue( val1 ) .. " " .. binOp .. " " .. formatValue( val2 ) .. msg, level + 1 )
 	return false
 end
 
@@ -199,37 +291,39 @@ end
 -- Exception and/or Error Assertions
 -------------------------------------------------------------------------------
 
+local function getActualError( actualType, actualMessage )
+	local msg = "\n  Actual: "
+	if actualType then
+		msg = msg .. "got an exception of type " .. actualType
+	elseif actualMessage then
+		msg = msg .. "got an error"
+	else
+		msg = msg .. "the function ran smoothly"
+	end
+	if actualMessage then
+		msg = msg .. "\n Message: " .. actualMessage
+	end
+	return msg
+end
+
 -- returns an error message, or nil on success
 local function checkException( expectedType, messagePattern, actualType, actualMessage )
-	if expectedType ~= actualType then
+	if expectedType and expectedType ~= actualType then
 		local msg = "Expected: "
 		if expectedType then
 			msg = msg .. "an exception of type " .. expectedType
 		elseif messagePattern then
-			msg = msg .. "an error with a message matching the pattern " .. sformat( '%q', messagePattern )
-		elseif messagePattern == nil then
-			msg = msg .. "an error with any message"
-		else -- messagePattern == false
-			msg = msg .. "no error"
-		end
-		msg = msg .. "\n  Actual: "
-		if actualType then
-			msg = msg .. "got an exception of type " .. actualType
-		elseif actualMessage then
-			msg = msg .. "got an error"
+			msg = msg .. "an error with a message matching the pattern " .. util.quoteString( messagePattern )
 		else
-			msg = msg .. "the function ran smoothly"
+			msg = msg .. "an error with any message"
 		end
-		if actualMessage then
-			msg = msg .. "\n Message: " .. actualMessage
-		end
-		return msg
+		return msg .. getActualError( actualType, actualMessage )
+	elseif messagePattern == nil and not actualMessage then
+		return "Expected: an error with any message" .. getActualError( actualType, actualMessage )
 	end
-	if messagePattern then
-		if not actualMessage or not smatch( actualMessage, messagePattern ) then
-			return "Expected: a message matching the pattern " .. sformat( '%q', messagePattern )
-				.. "\n  Actual: it doesn't match the pattern.\n Message: \"" .. actualMessage .. '"'
-		end
+	if messagePattern and actualMessage and not smatch( actualMessage, messagePattern ) then
+		return "Expected: an error message matching the pattern " .. util.quoteString( messagePattern )
+			.. "\n  Actual: the error does not match the pattern.\n Message: \"" .. actualMessage .. '"'
 	end
 end
 
@@ -248,6 +342,7 @@ local function expectException( expectedType, messagePattern, closure, level )
 	local actualType, message
 	if not ok then
 		actualType, message = coGetException( err )
+		assert( message )
 	end
 
 	local failureMsg = checkException( expectedType, messagePattern, actualType, message )
@@ -281,10 +376,13 @@ end
 local function expectNoError( closure, level )
 	local ok, err = pcall( closure )
 	if not ok then
-		local exceptionType, message = coGetException( err )
-		addFailure( checkException( nil, false, exceptionType, message ), 1 )
+		addFailure( "Expected: no error" .. getActualError( coGetException( err ) ), level + 1 )
 	end
 	return ok
+end
+
+local function assertNoError( closure, level )
+	return expectNoError( closure, level + 1 ) or fail()
 end
 
 function env.EXPECT_NO_ERROR( closure )
@@ -292,13 +390,7 @@ function env.EXPECT_NO_ERROR( closure )
 end
 
 function env.ASSERT_NO_ERROR( closure )
-	return expectNoError( closure, 1 ) or fail()
+	return assertNoError( closure, 1 )
 end
-
--------------------------------------------------------------------------------
--- Failure Assertions (tests if a testing function reports failures correctly)
--------------------------------------------------------------------------------
-
-
 
 return env

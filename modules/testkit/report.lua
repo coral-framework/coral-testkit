@@ -26,17 +26,6 @@ local function xmlEscape( str )
 	return sGSub( str, "[%c<>&\"]", xmlEscaper )
 end
 
-local file
-
--- write strings
-
-
--- writes a line
-
-
--- writes an XML attribute
-
-
 -- replaces double quotes with single quotes
 local function escape( text ) return string.gsub( text, "\"", "'" ) end
 
@@ -74,7 +63,7 @@ local function writeToXml( stats, suites, filename )
 	wa( "errors", stats.errors )
 	wa( "failures", stats.failures )
 	wa( "time", stats.time )
-	wa( "timestamp", os.date "%Y-%m-%d%Z%H:%M:%S" )
+	wa( "timestamp", os.date "%Y-%m-%d %H:%M:%S %Z" )
 	wl( ">" )
 
 	for _, suite in ipairs( suites ) do
