@@ -63,7 +63,7 @@ local function writeToXml( stats, suites, filename )
 	wa( "errors", stats.errors )
 	wa( "failures", stats.failures )
 	wa( "time", stats.time )
-	wa( "timestamp", os.date "%Y-%m-%d %H:%M:%S %Z" )
+	wa( "timestamp", os.date "%Y-%m-%d %H:%M:%S %z" )
 	wl( ">" )
 
 	for _, suite in ipairs( suites ) do
