@@ -26,17 +26,13 @@ set( CORAL_PATH "${CMAKE_SOURCE_DIR}/modules" )
 # Installation
 ################################################################################
 
-# enforce a safe default CMAKE_INSTALL_PREFIX
-if( NOT CMAKE_INSTALL_PREFIX MATCHES "coral-testkit" )
-	set( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/coral-testkit" )
-endif()
-
 # install module files
 install( DIRECTORY "${CMAKE_SOURCE_DIR}/modules/" DESTINATION modules )
 
 ################################################################################
 # Packaging
 ################################################################################
+
 set( CPACK_PACKAGE_NAME					"coral-testkit" )
 set( CPACK_PACKAGE_VERSION_MAJOR		"0" )
 set( CPACK_PACKAGE_VERSION_MINOR		"5" )
