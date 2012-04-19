@@ -42,6 +42,9 @@ function errors()
 	EXPECT_NONFATAL_FAILURE( "ErrorTests%.lua(.+)Actual: the function ran smoothly", function()
 		EXPECT_ERROR( noError )
 	end )
+	EXPECT_NONFATAL_FAILURE( "ErrorTests%.lua(.+)Actual: the function ran smoothly", function()
+		EXPECT_ERROR( "some message", noError )
+	end )
 end
 
 function noErrors()

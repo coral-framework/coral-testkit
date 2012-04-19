@@ -308,18 +308,16 @@ end
 
 -- returns an error message, or nil on success
 local function checkException( expectedType, messagePattern, actualType, actualMessage )
-	if expectedType and expectedType ~= actualType then
+	if ( expectedType ~= actualType and expectedType ) or actualMessage == nil then
 		local msg = "Expected: "
 		if expectedType then
 			msg = msg .. "an exception of type " .. expectedType
 		elseif messagePattern then
-			msg = msg .. "an error with a message matching the pattern " .. util.quoteString( messagePattern )
+			msg = msg .. "an error message matching the pattern " .. util.quoteString( messagePattern )
 		else
 			msg = msg .. "an error with any message"
 		end
 		return msg .. getActualError( actualType, actualMessage )
-	elseif messagePattern == nil and not actualMessage then
-		return "Expected: an error with any message" .. getActualError( actualType, actualMessage )
 	end
 	if messagePattern and actualMessage and not smatch( actualMessage, messagePattern ) then
 		return "Expected: an error message matching the pattern " .. util.quoteString( messagePattern )
